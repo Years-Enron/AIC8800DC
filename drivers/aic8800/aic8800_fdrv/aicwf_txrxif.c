@@ -697,7 +697,11 @@ int aicwf_process_rxframes(struct aicwf_rx_priv *rx_priv)
                 if(msg == NULL){
                     txrx_err("no more space for msg!\n");
                     aicwf_prealloc_rxbuff_free(buffer, &rx_priv->rxbuff_lock);
-                    return -EBADE;
+                    /* keep rx_cnt symmetric with the URB completion's atomic_inc,
+                       otherwise it never returns to 0 and busrx_thread is never
+                       woken again (the ==1 wakeup edge is permanently missed) */
+                    atomic_dec(&rx_priv->rx_cnt);
+                    continue;
                 }
                 memcpy(msg, data, aggr_len + 4);
 
