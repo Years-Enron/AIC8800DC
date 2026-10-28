@@ -204,9 +204,16 @@ static int aicwf_get_freq(struct net_device *dev,
 		wrqu->freq.e = 1;
 		wrqu->freq.i = ieee80211_frequency_to_channel(rwnx_vif->sta.ap->center_freq);
 	}else{
-		wrqu->freq.m = 2412 * 100000;
+		struct rwnx_hw *rwnx_hw = rwnx_vif->rwnx_hw;
+		int _freq = 2412;
+		if (rwnx_chanctx_valid(rwnx_hw, rwnx_vif->ch_index)) {
+			struct cfg80211_chan_def *_cd = &rwnx_hw->chanctx_table[rwnx_vif->ch_index].chan_def;
+			if (_cd->chan)
+				_freq = _cd->chan->center_freq;
+		}
+		wrqu->freq.m = _freq * 100000;
 		wrqu->freq.e = 1;
-		wrqu->freq.i = 1;
+		wrqu->freq.i = ieee80211_frequency_to_channel(_freq);
 	}
 
 	return 0;
