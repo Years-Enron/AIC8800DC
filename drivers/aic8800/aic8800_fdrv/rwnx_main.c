@@ -1870,6 +1870,9 @@ static struct rwnx_vif *rwnx_interface_add(struct rwnx_hw *rwnx_hw,
     #ifndef CONFIG_RWNX_MON_DATA
     list_for_each_entry(vif, &rwnx_hw->vifs, list) {
         // Check if monitor interface already exists or type is monitor
+        /* relaxed: airmon-ng adds the new vif before deleting the old one; fw vif is only created on open */
+        if (1)
+            continue;
         if ((RWNX_VIF_TYPE(vif) == NL80211_IFTYPE_MONITOR) ||
            (type == NL80211_IFTYPE_MONITOR)) {
             wiphy_err(rwnx_hw->wiphy,
@@ -2510,7 +2513,8 @@ static int rwnx_cfg80211_change_iface(struct wiphy *wiphy,
         list_for_each_entry(vif_el, &rwnx_hw->vifs, list) {
             // Check if data interface already exists
             if ((vif_el != vif) &&
-               (RWNX_VIF_TYPE(vif) != NL80211_IFTYPE_MONITOR)) {
+               (RWNX_VIF_TYPE(vif_el) != NL80211_IFTYPE_P2P_DEVICE) && vif_el->up &&
+               (RWNX_VIF_TYPE(vif_el) != NL80211_IFTYPE_MONITOR)) {
                 wiphy_err(rwnx_hw->wiphy,
                         "Monitor+Data interface support (MON_DATA) disabled\n");
                 return -EIO;
