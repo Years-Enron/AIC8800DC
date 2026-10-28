@@ -2326,6 +2326,18 @@ u8 rwnx_rxdataind_aicwf(struct rwnx_hw *rwnx_hw, void *hostid, void *rx_priv)
         #endif
         }
 
+        /* CONFIG_RWNX_MON_DATA is disabled in this build: when status has
+           both RX_STAT_MONITOR and RX_STAT_FORWARD set (frame is on the
+           monitor vif AND flagged for upload), the else branch above never
+           assigns skb_monitor, which stays NULL here and was unconditionally
+           dereferenced below -- a guaranteed NULL-pointer write (observed as
+           a kernel oops in the busrx kernel thread under mixed monitor +
+           injection traffic). Once that thread dies mid-crash it never frees
+           any more rx_buff entries, so the RX buffer pool silently drains to
+           0 and capture stops permanently until reboot/replug. Skip monitor
+           forwarding instead of crashing; RX_STAT_FORWARD handling further
+           down in this function still delivers the frame normally. */
+        if (skb_monitor) {
         skb_reset_tail_pointer(skb);
         skb->len = 0;
         skb_reset_tail_pointer(skb_monitor);
@@ -2339,6 +2351,7 @@ u8 rwnx_rxdataind_aicwf(struct rwnx_hw *rwnx_hw, void *hostid, void *rx_priv)
             if (skb_monitor != skb) {
                 dev_kfree_skb(skb);
             }
+        }
         }
     }
 
