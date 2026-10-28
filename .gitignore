@@ -1,1 +1,25 @@
+# build artifacts
+*.o
+*.ko
+*.ko.xz
+*.mod
+*.mod.c
+*.mod.o
+*.cmd
+.*.cmd
+*.order
+*.symvers
+Module.markers
+modules.order
+Module.symvers
+.tmp_versions/
+*.a
+*.so
+
+# python
+__pycache__/
+*.pyc
+
+# os cruft
 **/.DS_Store
+.DS_Store
