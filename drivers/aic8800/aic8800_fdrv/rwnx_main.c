@@ -1460,7 +1460,9 @@ static int rwnx_open(struct net_device *dev)
     netdev_br_init(dev);
 #endif /* CONFIG_BR_SUPPORT */
 
-    netif_carrier_off(dev);
+    /* keep carrier ON for monitor so the qdisc delivers injected frames */
+    if (RWNX_VIF_TYPE(rwnx_vif) != NL80211_IFTYPE_MONITOR)
+        netif_carrier_off(dev);
     netif_start_queue(dev);
 
     return error;
