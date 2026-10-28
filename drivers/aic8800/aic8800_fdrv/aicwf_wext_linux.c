@@ -8,6 +8,7 @@
 #include <linux/vmalloc.h>
 #include "aicwf_debug.h"
 #include "rwnx_msg_tx.h"
+#include <net/cfg80211.h>
 #include "aicwf_wext_linux.h"
 #include "rwnx_defs.h"
 
@@ -217,24 +218,21 @@ static int aicwf_get_mode(struct net_device *dev, struct iw_request_info *a,
 
 	AICWFDBG(LOGTRACE, "%s Enter", __func__);
 
-	wrqu->mode = IW_MODE_AUTO;
-#if 0
-	if (check_fwstate(pmlmepriv, WIFI_STATION_STATE) == _TRUE)
-		wrqu->mode = IW_MODE_INFRA;
-	else if ((check_fwstate(pmlmepriv, WIFI_ADHOC_MASTER_STATE) == _TRUE) ||
-		 (check_fwstate(pmlmepriv, WIFI_ADHOC_STATE) == _TRUE))
-
-		wrqu->mode = IW_MODE_ADHOC;
-	else if (check_fwstate(pmlmepriv, WIFI_AP_STATE) == _TRUE)
-		wrqu->mode = IW_MODE_MASTER;
-	else if (check_fwstate(pmlmepriv, WIFI_MONITOR_STATE) == _TRUE)
-		wrqu->mode = IW_MODE_MONITOR;
-	else
-		wrqu->mode = IW_MODE_AUTO;
-#endif
-
+	switch (dev->ieee80211_ptr ? dev->ieee80211_ptr->iftype : NL80211_IFTYPE_UNSPECIFIED) {
+	case NL80211_IFTYPE_STATION:
+	case NL80211_IFTYPE_P2P_CLIENT:
+		wrqu->mode = IW_MODE_INFRA; break;
+	case NL80211_IFTYPE_ADHOC:
+		wrqu->mode = IW_MODE_ADHOC; break;
+	case NL80211_IFTYPE_AP:
+	case NL80211_IFTYPE_P2P_GO:
+		wrqu->mode = IW_MODE_MASTER; break;
+	case NL80211_IFTYPE_MONITOR:
+		wrqu->mode = IW_MODE_MONITOR; break;
+	default:
+		wrqu->mode = IW_MODE_AUTO; break;
+	}
 	return 0;
-
 }
 
 
