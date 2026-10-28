@@ -3380,7 +3380,11 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
                 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
                 sinfo.filled |= STATION_INFO_ASSOC_REQ_IES;
                 #endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0)
+		        cfg80211_new_sta(&rwnx_vif->wdev, sta->mac_addr, &sinfo, GFP_KERNEL);
+#else
 		        cfg80211_new_sta(rwnx_vif->ndev, sta->mac_addr, &sinfo, GFP_KERNEL);
+#endif
             }
 
 #ifdef CONFIG_BAND_STEERING
@@ -3496,7 +3500,11 @@ static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
 				}
 			}
             		if (rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP || rwnx_vif->wdev.iftype == NL80211_IFTYPE_P2P_GO) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0)
+                		cfg80211_del_sta(&rwnx_vif->wdev, cur->mac_addr, GFP_KERNEL);
+#else
                 		cfg80211_del_sta(rwnx_vif->ndev, cur->mac_addr, GFP_KERNEL);
+#endif
             		}
 
 #ifdef AICWF_RX_REORDER
@@ -6199,6 +6207,54 @@ static int rwnx_cfg80211_leave_mesh(struct wiphy *wiphy, struct net_device *dev)
 
     return 0;
 }
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0)
+/* Linux >= 7.1 cfg80211 op signature adapters */
+static int rwnx_cfg80211_add_key_wdev(struct wiphy *wiphy, struct wireless_dev *wdev,
+        int link_id, u8 key_index, bool pairwise, const u8 *mac_addr, struct key_params *params)
+{ return rwnx_cfg80211_add_key(wiphy, wdev->netdev, link_id, key_index, pairwise, mac_addr, params); }
+static int rwnx_cfg80211_get_key_wdev(struct wiphy *wiphy, struct wireless_dev *wdev,
+        int link_id, u8 key_index, bool pairwise, const u8 *mac_addr, void *cookie,
+        void (*callback)(void *cookie, struct key_params *))
+{ return rwnx_cfg80211_get_key(wiphy, wdev->netdev, link_id, key_index, pairwise, mac_addr, cookie, callback); }
+static int rwnx_cfg80211_del_key_wdev(struct wiphy *wiphy, struct wireless_dev *wdev,
+        int link_id, u8 key_index, bool pairwise, const u8 *mac_addr)
+{ return rwnx_cfg80211_del_key(wiphy, wdev->netdev, link_id, key_index, pairwise, mac_addr); }
+static int rwnx_cfg80211_set_default_mgmt_key_wdev(struct wiphy *wiphy, struct wireless_dev *wdev,
+        int link_id, u8 key_index)
+{ return rwnx_cfg80211_set_default_mgmt_key(wiphy, wdev->netdev, link_id, key_index); }
+static int rwnx_cfg80211_add_station_wdev(struct wiphy *wiphy, struct wireless_dev *wdev,
+        const u8 *mac, struct station_parameters *params)
+{ return rwnx_cfg80211_add_station(wiphy, wdev->netdev, mac, params); }
+static int rwnx_cfg80211_del_station_wdev(struct wiphy *wiphy, struct wireless_dev *wdev,
+        struct station_del_parameters *params)
+{ return rwnx_cfg80211_del_station_compat(wiphy, wdev->netdev, params); }
+static int rwnx_cfg80211_change_station_wdev(struct wiphy *wiphy, struct wireless_dev *wdev,
+        const u8 *mac, struct station_parameters *params)
+{ return rwnx_cfg80211_change_station(wiphy, wdev->netdev, mac, params); }
+static int rwnx_cfg80211_get_station_wdev(struct wiphy *wiphy, struct wireless_dev *wdev,
+        const u8 *mac, struct station_info *sinfo)
+{ return rwnx_cfg80211_get_station(wiphy, wdev->netdev, mac, sinfo); }
+static int rwnx_cfg80211_dump_station_wdev(struct wiphy *wiphy, struct wireless_dev *wdev,
+        int idx, u8 *mac, struct station_info *sinfo)
+{ return rwnx_cfg80211_dump_station(wiphy, wdev->netdev, idx, mac, sinfo); }
+static int rwnx_cfg80211_set_wiphy_params_radio(struct wiphy *wiphy, int radio_idx, u32 changed)
+{ return rwnx_cfg80211_set_wiphy_params(wiphy, changed); }
+static int rwnx_cfg80211_set_tx_power_radio(struct wiphy *wiphy, struct wireless_dev *wdev,
+        int radio_idx, enum nl80211_tx_power_setting type, int mbm)
+{ return rwnx_cfg80211_set_tx_power(wiphy, wdev, type, mbm); }
+#define rwnx_cfg80211_add_key rwnx_cfg80211_add_key_wdev
+#define rwnx_cfg80211_get_key rwnx_cfg80211_get_key_wdev
+#define rwnx_cfg80211_del_key rwnx_cfg80211_del_key_wdev
+#define rwnx_cfg80211_set_default_mgmt_key rwnx_cfg80211_set_default_mgmt_key_wdev
+#define rwnx_cfg80211_add_station rwnx_cfg80211_add_station_wdev
+#define rwnx_cfg80211_del_station_compat rwnx_cfg80211_del_station_wdev
+#define rwnx_cfg80211_change_station rwnx_cfg80211_change_station_wdev
+#define rwnx_cfg80211_get_station rwnx_cfg80211_get_station_wdev
+#define rwnx_cfg80211_dump_station rwnx_cfg80211_dump_station_wdev
+#define rwnx_cfg80211_set_wiphy_params rwnx_cfg80211_set_wiphy_params_radio
+#define rwnx_cfg80211_set_tx_power rwnx_cfg80211_set_tx_power_radio
+#endif
 
 static struct cfg80211_ops rwnx_cfg80211_ops = {
     .add_virtual_intf = rwnx_cfg80211_add_iface,

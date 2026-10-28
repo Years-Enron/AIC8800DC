@@ -1633,7 +1633,7 @@ void reord_deinit_sta(struct aicwf_rx_priv* rx_priv, struct reord_ctrl_info *reo
             reord_rxframe_free(&rx_priv->freeq_lock, &rx_priv->rxframes_freequeue, &req->rxframe_list);
         }
 
-		AICWFDBG(LOGINFO, "reord dinit in_irq():%d in_atomic:%d in_softirq:%d\r\n", (int)in_irq()
+		AICWFDBG(LOGINFO, "reord dinit in_irq():%d in_atomic:%d in_softirq:%d\r\n", (int)in_hardirq()
 			,(int)in_atomic(), (int)in_softirq());
         spin_unlock_bh(&preorder_ctrl->reord_list_lock);
     }
@@ -2368,7 +2368,11 @@ check_len_update:
         hdr = (struct ieee80211_hdr *)(skb->data + msdu_offset);
         rwnx_vif = rwnx_rx_get_vif(rwnx_hw, hw_rxhdr->flags_vif_idx);
         if (rwnx_vif) {
+            #if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0)
+            cfg80211_rx_spurious_frame(rwnx_vif->ndev, hdr->addr2, -1, GFP_ATOMIC);
+#else
             cfg80211_rx_spurious_frame(rwnx_vif->ndev, hdr->addr2, GFP_ATOMIC);
+#endif
         }
         goto end;
     }
@@ -2618,8 +2622,13 @@ check_len_update:
                 }
 
                 if (hw_rxhdr->flags_is_4addr && !rwnx_vif->use_4addr) {
-                    cfg80211_rx_unexpected_4addr_frame(rwnx_vif->ndev,
+                    #if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0)
+cfg80211_rx_unexpected_4addr_frame(rwnx_vif->ndev,
+                                                       sta->mac_addr, -1, GFP_ATOMIC);
+#else
+cfg80211_rx_unexpected_4addr_frame(rwnx_vif->ndev,
                                                        sta->mac_addr, GFP_ATOMIC);
+#endif
                 }
             }
 
